@@ -35,3 +35,9 @@ You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to genera
 * **src** is the product folder name under *wp-content/uploads*. Nesting is supported, e.g. *src="3d-products/client1/product01"*
 * **width** is your desired width in px or % (optional parameter, defaults to 500px)
 * **height** is your desired height in px or % (optional parameter, defaults to 375px)
+
+== Changelog ==
+#####1.0.1#####
+* added support for embedding flash based 360 product rotations created with 3DRT Setup Utility 1.3.8 and older
+#####1.0.0#####
+* initial release
