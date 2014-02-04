@@ -1,24 +1,26 @@
 <?php
 /**
  * @package 360 Product Rotation
- * @version 1.0.1
+ * @version 1.0.2
  */
 /*
 Plugin Name: 360&deg; Product Rotation
 Plugin URI: http://www.yofla.com/3d-rotate/wordpress-plugin-360-product-rotation/
 Description: Plugin for easier integration of the 360 product rotation created by the 3D Rotate Tool Setup Utility.
 Author: YoFLA.com
-Version: 1.0.1
+Version: 1.0.2
 Last Modified: 01/2014
 Author URI: http://www.yofla.com/
 License: GPLv2
 */
 
+
+
 //define constants
 if (!defined('YOFLA_PLAYER_URL')) define('YOFLA_PLAYER_URL', 'https://www.yofla.com/3d-rotate/app/cdn/get/rotatetool.js');
 if (!defined('YOFLA_LICENSE_ID_CHECK_URL')) define('YOFLA_LICENSE_ID_CHECK_URL', 'http://www.yofla.com/3d-rotate/app/check/licenseid/');
 if (!defined('YOFLA_360_VERSION_KEY')) define('YOFLA_360_VERSION_KEY', 'yofla_360_version');
-if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.1');
+if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.2');
 if (!defined('YOFLA_360_PATH'))  define('YOFLA_360_PATH', plugin_dir_path(__FILE__));
 if (!defined('YOFLA_360_URL'))  define('YOFLA_360_URL', plugin_dir_url(__FILE__));
 
@@ -42,8 +44,13 @@ if( is_admin() ){
 add_shortcode('360', 'yofla_360_embed_shortcode');
 
 
+$yofla_360_embed_map = array();
+
 
 function yofla_360_embed_shortcode($attributes, $content = null) {
+
+    //
+    global $yofla_360_embed_map;
 
     //process attributes
     $attributes = yofla_360_process_attributes($attributes);
@@ -60,6 +67,15 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
         $html = yofla_360_format_error('uploads directory not accessible!');
         return $html;
     }
+
+    // check duplicate embeds
+    if(in_array($attributes['src'],$yofla_360_embed_map)){
+        $html = yofla_360_format_error('Currently it is not possible to embed one object twice in one page!');
+        return $html;
+    }
+    $yofla_360_embed_map[] = $attributes['src'];
+
+
 
     //init path variables
     $uploads_url       = $wp_uploads["baseurl"];
@@ -85,8 +101,18 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
     if($output_legacy_version){
         $code = yofla_360_output_legacy($attributes,$product_url,$product_path);
     }
+    elseif($attributes['iframe'] === 'true'){
+        $code = yofla_360_get_iframe_code($attributes,$product_url,$product_path);
+    }
+
     else{
-        $code = yofla_360_output_element($attributes,$file_path_config,$product_url,$rotatetool_js_url);
+        switch($attributes['show']){
+            case 'popup':
+                $code = yofla_360_get_popup_code($attributes,$file_path_config,$product_url,$product_path);
+                break;
+            default:
+                $code = yofla_360_get_embed_code($attributes,$file_path_config,$product_url,$rotatetool_js_url);
+        }
     }
 
     $html .= $code;
@@ -106,7 +132,7 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
  * @param $rotatetool_js_url
  * @return string
  */
-function yofla_360_output_element($attributes,$file_path_config,$product_url,$rotatetool_js_url){
+function yofla_360_get_embed_code($attributes,$file_path_config,$product_url,$rotatetool_js_url){
 
     $html = '';
 
@@ -135,6 +161,66 @@ function yofla_360_output_element($attributes,$file_path_config,$product_url,$ro
 
     return $html;
 }
+
+
+function yofla_360_get_popup_code($attributes,$file_path_config,$product_url,$product_path){
+    wp_enqueue_style( 'nivo-lightbox-css', YOFLA_360_URL.'vendor/nivo-lightbox/nivo-lightbox.css' );
+    wp_enqueue_style( 'nivo-lightbox-theme-css', YOFLA_360_URL.'vendor/nivo-lightbox/themes/default/default.css' );
+    wp_enqueue_script( 'nivo-lightbox', YOFLA_360_URL.'vendor/nivo-lightbox/nivo-lightbox.js' );
+    wp_enqueue_script( 'nivo-lightbox-innit', YOFLA_360_URL.'js/init-nivo-lightbox.js' );
+
+    switch($attributes['using']){
+        case 'thumb':
+            $link_body = yofla_360_get_thumb_image($attributes,$file_path_config,$product_url,$product_path);
+            break;
+        case 'link':
+            $link_body = $attributes['name'];
+        default:
+    }
+    $html = '<a class="yofla_360_popup" title="'.$attributes['name'].'" href="'.$product_url.'iframe.html">'.$link_body.'</a>';
+    return $html;
+}
+
+function yofla_360_get_thumb_image($attributes,$file_path_config,$product_url,$product_path){
+
+
+    $images_dir_path = $product_path.'images/';
+
+    //get list of images
+    $images_in_folder = @yofla_360_get_list_of_images($images_dir_path);
+
+    if(sizeof($images_in_folder) >= 1){
+        $img_path = $images_in_folder[0];
+        $image_name = basename($img_path);
+        $image_url = $product_url.'images/'.$image_name;
+        $out = '<img src="'.$image_url.'" width="120"  />';
+    }
+    else{
+        $out =  $attributes['name'];
+    }
+
+    return $out;
+
+}
+
+function yofla_360_get_list_of_images($path){
+
+
+    $folder = opendir($path);
+    $pic_types = array("jpg", "jpeg", "gif", "png");
+    $index = array();
+    while ($file = readdir ($folder)) {
+        if(in_array(substr(strtolower($file), strrpos($file,".") + 1),$pic_types))
+        {
+            array_push($index,$file);
+        }
+    }
+    closedir($folder);
+    sort($index);
+    return $index;
+}
+
+
 
 
 /**
@@ -191,6 +277,33 @@ function yofla_360_output_legacy($attributes,$product_url,$product_path){
     return $html;
 }
 
+function yofla_360_get_iframe_code($attributes,$product_url,$product_path){
+
+    //
+    $html = '';
+
+    // get width, height
+    $width  = $attributes['width_original'];
+    $height = $attributes['height_original'];
+
+    $iframe_url = $product_url.'/iframe.html';
+
+    //output iframe
+    $html .= '<iframe
+            width="'.$width.'"
+            height="'.$height.'"
+            src="'.$iframe_url.'"
+            marginheight="0"
+            marginwidth="0"
+            scrolling="no"
+            class="yofla_360_iframe"
+            >';
+    $html .= '</iframe>';
+
+
+    return $html;
+}
+
 
 /**
  * Ads default values to attributes
@@ -204,6 +317,10 @@ function yofla_360_process_attributes($attributes) {
     $defaults = array(
         'width' => '500',
         'height' => '375',
+        'show' => 'embed',
+        'name' => '360&deg; product rotation',
+        'iframe' => 'false',
+        'using' => false
     );
 
     //enhance provided attributes with  defaults
@@ -212,6 +329,9 @@ function yofla_360_process_attributes($attributes) {
             $attributes[$default] = $value;
         }
     }
+
+    //fix iframe switch
+    $attributes['iframe'] = strtolower($attributes['iframe']);
     
     //check src parameter
     if (!isset($attributes['src'])){
@@ -221,20 +341,19 @@ function yofla_360_process_attributes($attributes) {
     else{
         $attributes['src'] = yofla_360_format_provided_src_attribute($attributes['src']);
     }
-    //cache original width,height values
-    $attributes['width_original'] = $attributes['width'];
-    $attributes['height_original'] = $attributes['height'];
 
+    //cache original width,height values
+    $attributes['width_original'] = yofla_360_remove_px($attributes['width']);
+    $attributes['height_original'] = yofla_360_remove_px($attributes['height']);
 
     //enhance width/height with px or %
-    if(substr($attributes['width'],-1) != 'x' || substr($attributes['width'],-1) != '%'){
+    if(substr($attributes['width'],-1) != 'x' && substr($attributes['width'],-1) != '%'){
         $attributes['width'] = $attributes['width']."px";
     }
-    if(substr($attributes['height'],-1) != 'x' || substr($attributes['height'],-1) != '%'){
+    if(substr($attributes['height'],-1) != 'x' && substr($attributes['height'],-1) != '%'){
         $attributes['height'] = $attributes['height']."px";
     }
-    
-    
+
     return $attributes;
 }
 
@@ -259,8 +378,14 @@ function yofla_360_format_provided_src_attribute($src) {
  * @return string
  */
 function yofla_360_format_error($msg){
-    $str = '<div><span style="color: red">360 Plugin Error: '.$msg.'!</span></div>';
+    $str = '<div><span style="color: red">360 Plugin Error: '.$msg.'</span></div>';
     return $str;
+}
+
+
+function yofla_360_remove_px($string){
+    $string = preg_replace('#[^0-9]#','',strip_tags($string));
+    return $string;
 }
 
 

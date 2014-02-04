@@ -37,6 +37,10 @@ You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to genera
 * **height** is your desired height in px or % (optional parameter, defaults to 375px)
 
 == Changelog ==
+#####1.0.2#####
+* added error message when user wants to embed one object in one page twice or more (what is not currently possible)
+* added support for popup embed mode
+* fixed bug when using px values
 #####1.0.1#####
 * added support for embedding flash based 360 product rotations created with 3DRT Setup Utility 1.3.8 and older
 #####1.0.0#####
