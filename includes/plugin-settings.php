@@ -71,7 +71,14 @@ class Yofla_360_product_rotation_settings {
             'yofla-360-admin' // Page
         );
 
+        add_settings_section(
+            'yofla_360_settings_section_shortcode', // ID
+            'Shortcode defaults', // Title
+            array( $this, 'print_section_info_shortcode' ), // Callback
+            'yofla-360-admin' // Page
+        );
 
+        //license id
         add_settings_field(
             'license_id',
             '<strong>License Id:</strong>',
@@ -79,6 +86,16 @@ class Yofla_360_product_rotation_settings {
             'yofla-360-admin',
             'yofla_360_settings_section'
         );
+
+        //iframe styles
+        add_settings_field(
+            'iframe_styles',
+            '<strong>iframe_styles:</strong>',
+            array( $this, 'iframe_styles_callback' ),
+            'yofla-360-admin',
+            'yofla_360_settings_section_shortcode'
+        );
+
     }
 
     /**
@@ -93,6 +110,12 @@ class Yofla_360_product_rotation_settings {
         
         if( isset( $input['license_id'] ) ){
             $new_input['license_id'] = sanitize_text_field( $input['license_id'] );
+        }
+
+        if( isset( $input['iframe_styles'] ) ){
+            $new_input['iframe_styles'] = sanitize_text_field( $input['iframe_styles'] );
+            //remove trailing/leading " or '
+            $new_input['iframe_styles']= trim($new_input['iframe_styles']," '\"");
         }
 
         return $new_input;
@@ -164,6 +187,16 @@ class Yofla_360_product_rotation_settings {
         echo $msg;
     }
 
+    /**
+     * Print the Section text for shortcode options
+     */
+    public function print_section_info_shortcode()
+    {
+        $msg = '<p>Set default site-wide default shortcode values for embedding the 360&deg; product rotation.';
+        $msg .= '</p>';
+        echo $msg;
+
+    }
 
     /**
      * Get the settings option array and print one of its values
@@ -173,6 +206,20 @@ class Yofla_360_product_rotation_settings {
         printf(
             '<input type="text" id="license_id" name="yofla_360_options[license_id]" value="%s" />',
             isset( $this->options['license_id'] ) ? esc_attr( $this->options['license_id']) : ''
+        );
+    }
+
+    /**
+     * Get the settings option array and print one of its values
+     */
+    public function iframe_styles_callback()
+    {
+
+        $desc = '<br />When not set, this default is used: "max-width: 100%; border: 1px solid silver;"';
+
+        printf(
+            '<input type="text" id="iframe_styles" name="yofla_360_options[iframe_styles]" value="%s" />%s',
+            isset( $this->options['iframe_styles'] ) ? esc_attr( $this->options['iframe_styles']) : '', $desc
         );
     }
 
