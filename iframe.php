@@ -4,7 +4,7 @@
  *
  */
 
-if (!defined('YOFLA_PLAYER_URL')) define('YOFLA_PLAYER_URL', 'https://www.yofla.com/3d-rotate/app/cdn/get/rotatetool.js');
+if (!defined('YOFLA_PLAYER_URL')) define('YOFLA_PLAYER_URL', 'http://www.yofla.com/3d-rotate/app/cdn/get/rotatetool.js');
 
 //construct $path variable
 $path = '';

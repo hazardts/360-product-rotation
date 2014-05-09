@@ -6,7 +6,7 @@ Requires at least: 3.3.0
 Tested up to: 3.9.1.
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Stable tag: 1.0.4
+Stable tag: trunk
 
 Insert 360 degree product views created with the free 3DRT Setup Utility Desktop application into your WordPress site.
 
@@ -40,6 +40,9 @@ You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to genera
 * **height** is your desired height in px or % (optional parameter, defaults to 375px)
 
 == Changelog ==
+#####1.0.5#####
+* typo in 1.0.4 fixed
+
 #####1.0.4#####
 * temporary disabled ssl connection for cloud based rotatetool.js (problem with renewing ssl certficate on side of my hosting provider)
 
