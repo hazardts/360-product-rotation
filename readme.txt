@@ -6,7 +6,7 @@ Requires at least: 3.3.0
 Tested up to: 3.9.1.
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Stable tag: trunk
+Stable tag: 1.0.5
 
 Insert 360 degree product views created with the free 3DRT Setup Utility Desktop application into your WordPress site.
 
