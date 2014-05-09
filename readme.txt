@@ -3,10 +3,10 @@ Contributors: YoFLA
 Tags: 360, 360 product view, 360 product rotation, 360 product viewer, 3d product viewer, 360 view software,
 product rotation, objectvr, object vr, 3D product rotation, 3D, product spin, 360 product spin
 Requires at least: 3.3.0
-Tested up to: 3.8.1.
+Tested up to: 3.9.1.
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Stable tag: 1.0.3
+Stable tag: trunk
 
 Insert 360 degree product views created with the free 3DRT Setup Utility Desktop application into your WordPress site.
 
@@ -40,6 +40,9 @@ You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to genera
 * **height** is your desired height in px or % (optional parameter, defaults to 375px)
 
 == Changelog ==
+#####1.0.4#####
+* temporary disabled ssl connection for cloud based rotatetool.js (problem with renewing ssl certficate on side of my hosting provider)
+
 #####1.0.3#####
 * iframe embed mode is now turned on by default (for better fullscreen support)
 * added option to set default iframe styles in Settings page
