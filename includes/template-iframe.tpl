@@ -15,7 +15,13 @@
 </head>
 
 <body>
-<div id='product3d' data-rotate-tool='{"path":"{path}","id":""}'> </div>
+<div id='product3d' data-rotate-tool='{"path":"{path}",
+"id":"",
+"gaData":{"isEnabled":"{ga_enabled}",
+	"trackingId":"{ga_tracking_id}",
+	"label":"{ga_label}",
+	"category":"{ga_category}"
+} }'> </div>
 <script type="text/javascript" src="{rotatetool_js_src}"></script>
 </body>
 </html>

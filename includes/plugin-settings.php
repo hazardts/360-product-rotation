@@ -96,6 +96,26 @@ class Yofla_360_product_rotation_settings {
             'yofla_360_settings_section_shortcode'
         );
 
+        //gaEnabled
+        add_settings_field(
+            'ga_enabled',
+            '<strong>ga_enabled:</strong>',
+            array( $this, 'ga_enabled_callback' ),
+            'yofla-360-admin',
+            'yofla_360_settings_section_shortcode'
+        );
+        
+        //ga tracking id
+        add_settings_field(
+            'ga_tracking_id',
+            '<strong>ga_tracking_id:</strong>',
+            array( $this, 'ga_tracking_id_callback' ),
+            'yofla-360-admin',
+            'yofla_360_settings_section_shortcode'
+        );
+
+
+
     }
 
     /**
@@ -116,6 +136,16 @@ class Yofla_360_product_rotation_settings {
             $new_input['iframe_styles'] = sanitize_text_field( $input['iframe_styles'] );
             //remove trailing/leading " or '
             $new_input['iframe_styles']= trim($new_input['iframe_styles']," '\"");
+        }
+        
+        if( isset( $input['ga_tracking_id'] ) ){
+            $new_input['ga_tracking_id'] = sanitize_text_field( $input['ga_tracking_id'] );
+            //remove trailing/leading " or '
+            $new_input['ga_tracking_id']= trim($new_input['ga_tracking_id']," '\"");
+        }
+
+        if( isset( $input['ga_enabled'] ) ){
+            $new_input['ga_enabled'] = 1;
         }
 
         return $new_input;
@@ -214,14 +244,39 @@ class Yofla_360_product_rotation_settings {
      */
     public function iframe_styles_callback()
     {
-
         $desc = '<br />When not set, this default is used: "max-width: 100%; border: 1px solid silver;"';
-
         printf(
             '<input type="text" id="iframe_styles" name="yofla_360_options[iframe_styles]" value="%s" />%s',
             isset( $this->options['iframe_styles'] ) ? esc_attr( $this->options['iframe_styles']) : '', $desc
         );
     }
+
+    /**
+     * Get the settings option array and print one of its values
+     */
+    public function ga_enabled_callback()
+    {
+
+        $desc = '<br />Turns on Google Analytics Events Tracking. <a href="http://www.yofla.com/3d-rotate/support/manuals/tracking-user-engagement-using-google-analytics/" target="_blank">More Info.</a>';
+
+        printf(
+            '<input type="checkbox" id="ga_enabled" value="1" name="yofla_360_options[ga_enabled]" %s />%s',
+            isset( $this->options['ga_enabled'] ) ? 'checked' : '', $desc
+        );
+    }
+    
+    /**
+     * Get the settings option array and print one of its values
+     */
+    public function ga_tracking_id_callback()
+    {
+        $desc = '<br />Your Google Analytics profile tracking ID, e.g. UA-123456-7';
+        printf(
+            '<input type="text" id="ga_tracking_id" name="yofla_360_options[ga_tracking_id]" value="%s" />%s',
+            isset( $this->options['ga_tracking_id'] ) ? esc_attr( $this->options['ga_tracking_id']) : '', $desc
+        );
+    }
+
 
     /**
      * Checks if order data is valid

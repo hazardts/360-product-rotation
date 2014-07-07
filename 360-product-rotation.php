@@ -8,8 +8,8 @@ Plugin Name: 360&deg; Product Rotation
 Plugin URI: http://www.yofla.com/3d-rotate/wordpress-plugin-360-product-rotation/
 Description: Plugin for easier integration of the 360 product rotation created by the 3D Rotate Tool Setup Utility.
 Author: YoFLA.com
-Version: 1.0.5
-Last Modified: 05/2014
+Version: 1.0.6
+Last Modified: 07/2014
 Author URI: http://www.yofla.com/
 License: GPLv2
 */
@@ -20,7 +20,7 @@ License: GPLv2
 if (!defined('YOFLA_PLAYER_URL')) define('YOFLA_PLAYER_URL', 'http://www.yofla.com/3d-rotate/app/cdn/get/rotatetool.js');
 if (!defined('YOFLA_LICENSE_ID_CHECK_URL')) define('YOFLA_LICENSE_ID_CHECK_URL', 'http://www.yofla.com/3d-rotate/app/check/licenseid/');
 if (!defined('YOFLA_360_VERSION_KEY')) define('YOFLA_360_VERSION_KEY', 'yofla_360_version');
-if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.5');
+if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.6');
 if (!defined('YOFLA_360_PATH'))  define('YOFLA_360_PATH', plugin_dir_path(__FILE__));
 if (!defined('YOFLA_360_URL'))  define('YOFLA_360_URL', plugin_dir_url(__FILE__));
 
@@ -153,7 +153,7 @@ function yofla_360_get_output_html($html_code){
 
 
 /**
- * Outputs the code as html element and not iframe
+ * Outputs the code as html element (so not as iframe)
  *
  * @param $attributes
  * @param $file_path_config
@@ -178,8 +178,18 @@ function yofla_360_get_embed_code($attributes,$file_path_config,$product_url,$ro
     $height = $attributes['height'];
     $styles = $attributes['styles'];
 
+    //analytics
+    $ga_data = array(
+        'ga_label' => $attributes['ga_label'],
+        'ga_category' => $attributes['ga_category'],
+        'ga_enabled' => ($attributes['ga_enabled'])?"true":"false",
+        'ga_tracking_id' => $attributes['ga_tracking_id'],
+    );
+
+    $ga_data_json = json_encode($ga_data);
+
     $html .= "<div id='".$div_id."' style='width: ".$width."; height: ".$height."; ".$styles."'";
-    $html .= " data-rotate-tool='{\"path\":\"".$product_url."\",\"id\":\"$product_id\"}' > </div>";
+    $html .= " data-rotate-tool='{\"path\":\"".$product_url."\",\"gaData\":".$ga_data_json.",\"id\":\"$product_id\"}' > </div>";
 
     //cloud based player url
     $yofla_360_settings = ($yofla_360_settings)?$yofla_360_settings:get_option( 'yofla_360_options' );
@@ -333,7 +343,7 @@ function yofla_360_output_legacy($attributes,$product_url,$product_path){
 
 
 /**
- * Returns iframe ebed code
+ * Returns iframe embed code
  *
  * @param $attributes
  * @param $product_url
@@ -357,8 +367,21 @@ function yofla_360_get_iframe_code($attributes,$product_url,$product_path){
 
     $iframe_url = $product_url.'/iframe.html';
 
+    //construct iframe html page if license id is set
     if($yofla_360_settings && isset($yofla_360_settings['license_id'])){
-        $iframe_url = YOFLA_360_URL.'iframe.php?license_id='.$yofla_360_settings['license_id'].'&product_url='.urlencode($product_url);
+
+
+        //pass data for iframe html creation
+        $data = array(
+          'license_id' =>  $yofla_360_settings['license_id'],
+          'product_url' => $product_url,
+          'product_name' => $attributes['name'],
+          'ga_label' => $attributes['ga_label'],
+          'ga_category' => $attributes['ga_category'],
+          'ga_tracking_id' => ($attributes['ga_enabled'] && $attributes['ga_tracking_id'])?$attributes['ga_tracking_id']:false
+        );
+
+        $iframe_url = YOFLA_360_URL.'iframe.php?'.http_build_query($data);
     }
 
     //output iframe
@@ -396,7 +419,20 @@ function yofla_360_process_attributes($attributes) {
     //get database settings
     $yofla_360_settings = ($yofla_360_settings)?$yofla_360_settings:get_option( 'yofla_360_options' );
 
-    //defaults
+    //db defaults
+    //set iframe styles based on user settings
+    if(!$attributes['iframe_styles'])
+    if($yofla_360_settings['iframe_styles']) $attributes['iframe_styles'] = $yofla_360_settings['iframe_styles'];
+
+    //set ga_enabled based on user settings
+    if(!$attributes['ga_enabled'])
+    if($yofla_360_settings['ga_enabled']) $attributes['ga_enabled'] = $yofla_360_settings['ga_enabled'];
+
+    //set ga_tracking_id based on user settings
+    if(!$attributes['ga_tracking_id'])
+    if($yofla_360_settings['ga_tracking_id']) $attributes['ga_tracking_id'] = $yofla_360_settings['ga_tracking_id'];
+
+    //local defaults
     $defaults = array(
         'width' => '500',
         'height' => '375',
@@ -405,6 +441,9 @@ function yofla_360_process_attributes($attributes) {
         'iframe' => 'true',
         'iframe_styles' => 'max-width: 100%; border: 1px solid silver;',
         'styles' => 'border: 1px solid silver;',
+        'ga_enabled' => false,
+        'ga_tracking_id' => null,
+        'ga_category' => 'YOFLA_360',
         'using' => false
     );
 
@@ -414,6 +453,13 @@ function yofla_360_process_attributes($attributes) {
             $attributes[$default] = $value;
         }
     }
+
+    //set default ga_label, if not set
+    if(!$attributes['ga_label'])
+        $attributes['ga_label'] = ($attributes['name'])?$attributes['name']:'yofla_360_undefined_product';
+
+    //fix false
+    if($attributes['ga_enabled'] === "false") $attributes['ga_enabled'] = false;
 
     //fix iframe switch
     $attributes['iframe'] = strtolower($attributes['iframe']);
@@ -440,8 +486,8 @@ function yofla_360_process_attributes($attributes) {
         $attributes['height'] = $attributes['height']."px";
     }
 
-    //override iframe styles based on user settings
-    if($yofla_360_settings['iframe_styles']) $attributes['iframe_styles'] = $yofla_360_settings['iframe_styles'];
+    //sanitize
+    $attributes['ga_label'] =  addslashes($attributes['ga_label']);
 
 
     return $attributes;
