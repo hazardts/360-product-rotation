@@ -8,7 +8,7 @@ Plugin Name: 360&deg; Product Rotation
 Plugin URI: http://www.yofla.com/3d-rotate/wordpress-plugin-360-product-rotation/
 Description: Plugin for easier integration of the 360 product rotation created by the 3D Rotate Tool Setup Utility.
 Author: YoFLA.com
-Version: 1.0.6
+Version: 1.0.7
 Last Modified: 07/2014
 Author URI: http://www.yofla.com/
 License: GPLv2
@@ -20,7 +20,7 @@ License: GPLv2
 if (!defined('YOFLA_PLAYER_URL')) define('YOFLA_PLAYER_URL', 'http://www.yofla.com/3d-rotate/app/cdn/get/rotatetool.js');
 if (!defined('YOFLA_LICENSE_ID_CHECK_URL')) define('YOFLA_LICENSE_ID_CHECK_URL', 'http://www.yofla.com/3d-rotate/app/check/licenseid/');
 if (!defined('YOFLA_360_VERSION_KEY')) define('YOFLA_360_VERSION_KEY', 'yofla_360_version');
-if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.6');
+if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.7');
 if (!defined('YOFLA_360_PATH'))  define('YOFLA_360_PATH', plugin_dir_path(__FILE__));
 if (!defined('YOFLA_360_URL'))  define('YOFLA_360_URL', plugin_dir_url(__FILE__));
 
@@ -48,7 +48,7 @@ add_shortcode('360', 'yofla_360_embed_shortcode');
 $yofla_360_embed_map = array();
 
 //var to store plugin settings
-$yofla_360_settings;
+$yofla_360_settings = array();
 
 /**
  * Function that processes the shortcode and outputs html code based on
@@ -62,6 +62,7 @@ $yofla_360_settings;
 function yofla_360_embed_shortcode($attributes, $content = null) {
 
     global $yofla_360_embed_map;
+    global $yofla_360_settings;
 
     //process attributes
     $attributes = yofla_360_process_attributes($attributes);
@@ -89,7 +90,7 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
 
     //init path variables
     $uploads_url       = $wp_uploads["baseurl"];
-    $product_url       = $uploads_url.$attributes['src'];
+    $product_url       = yofla_360_get_product_url($attributes['src'],$uploads_url);
     $product_path      = $wp_uploads['basedir'].$attributes['src'];
     $file_path_config  = $product_path.'config.js';
     $file_path_config_xml  = $product_path.'config.xml';
@@ -100,10 +101,14 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
        $output_legacy_version = true;
     }
 
-    //check paths
-    if(!file_exists($file_path_config) && $output_legacy_version == false){
-        $html = yofla_360_format_error('Config file not readable, are paths set correctly? Path: '.$file_path_config);
-        return $html;
+    //check local paths, if set correctly
+    if($output_legacy_version == false) {
+        if($yofla_360_settings['is_absolute_url'] === false) {
+           if(!file_exists($file_path_config)) {
+               $html = yofla_360_format_error('Config file not readable, are paths set correctly? Path: '.$file_path_config);
+               return $html;
+           }
+        }
     }
 
     //if legacy version, return old html code
@@ -134,6 +139,29 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
 
     // send html to browser
     return yofla_360_get_output_html($code);
+}
+
+/**
+ * Formats product url (data-rotate-tool path parameter) - if it starts with http, do not prepend
+ * wordpress url
+ *
+ * @param $src_attribute
+ * @param $wp_uploads_url
+ * @return string
+ */
+function yofla_360_get_product_url($src_attribute,$wp_uploads_url) {
+    global $yofla_360_settings;
+
+    //starts with http
+    if( yofla_360_starts_with_http($src_attribute)) {
+        $yofla_360_settings['is_absolute_url'] = true;
+        return $src_attribute;
+    }
+    //src given relative to uploads folder
+    else {
+        $yofla_360_settings['is_absolute_url'] = false;
+        return $wp_uploads_url.$src_attribute;
+    }
 }
 
 /**
@@ -501,9 +529,24 @@ function yofla_360_process_attributes($attributes) {
  * @return string
  */
 function yofla_360_format_provided_src_attribute($src) {
+    $src = trim($src);
+    //trailing
     if (substr($src,-1) != '/') $src .= '/';
-    if (substr($src,0,1) != '/') $src = '/'.$src;
+    //leading
+    if (substr($src,0,1) != '/' && yofla_360_starts_with_http($src)=== false) $src = '/'.$src;
     return $src;
+}
+
+/**
+ * Checks if string starts with http
+ *
+ * @param $str
+ * @return bool
+ */
+function  yofla_360_starts_with_http($str){
+    if(strpos($str,'http') === 0)
+        return true;
+    return false;
 }
 
 

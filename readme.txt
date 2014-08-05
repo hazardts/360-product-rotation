@@ -6,7 +6,7 @@ Requires at least: 3.3.0
 Tested up to: 3.9.1.
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Stable tag: 1.0.6
+Stable tag: trunk
 
 Insert 360 degree product views created with the free 3DRT Setup Utility Desktop application into your WordPress site.
 
@@ -24,7 +24,7 @@ An example is worth 1000s words: [View Online Demo](http://www.yofla.com/3d-rota
 
 
 ####How it works####
-You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to generate your 360° prodct view. Then upload the files usign FTP to your site and use a shortcode to insert the 360° product view to your site.
+You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to generate your 360° product view. Then upload the files usign FTP to your site and use a shortcode to insert the 360° product view to your site.
 
 
 == Installation ==
@@ -42,6 +42,9 @@ You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to genera
 List of all available options here: [360&deg; WP Plugin Manual](http://www.yofla.com/3d-rotate/support/plugins/wordpress-plugin-360-product-rotation/)
 
 == Changelog ==
+#####1.0.7#####
+* Added support for specifying Absolute URLs as src parameter, e.g. for amazon s3 files hosting
+
 #####1.0.6#####
 * Added support for Google Analytics Events Tracking
 
