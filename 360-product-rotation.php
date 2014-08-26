@@ -8,7 +8,7 @@ Plugin Name: 360&deg; Product Rotation
 Plugin URI: http://www.yofla.com/3d-rotate/wordpress-plugin-360-product-rotation/
 Description: Plugin for easier integration of the 360 product rotation created by the 3D Rotate Tool Setup Utility.
 Author: YoFLA.com
-Version: 1.0.7
+Version: 1.0.8
 Last Modified: 07/2014
 Author URI: http://www.yofla.com/
 License: GPLv2
@@ -23,6 +23,7 @@ if (!defined('YOFLA_360_VERSION_KEY')) define('YOFLA_360_VERSION_KEY', 'yofla_36
 if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.7');
 if (!defined('YOFLA_360_PATH'))  define('YOFLA_360_PATH', plugin_dir_path(__FILE__));
 if (!defined('YOFLA_360_URL'))  define('YOFLA_360_URL', plugin_dir_url(__FILE__));
+if (!defined('YOFLA_360_PRODUCTS_DIRECTORY_NAME'))  define('YOFLA_360_PRODUCTS_DIRECTORY_NAME', 'yofla360');
 
 //store plugin version to db
 add_option(YOFLA_360_VERSION_KEY, YOFLA_360_VERSION_NUM);
@@ -39,9 +40,6 @@ if( is_admin() ){
     require YOFLA_360_PATH.'includes/plugin-settings.php';
     new Yofla_360_product_rotation_settings();
 }
-
-//define shortcode and callback
-add_shortcode('360', 'yofla_360_embed_shortcode');
 
 
 //for tracking div embeds (iframes run in separate html)
@@ -93,6 +91,7 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
     $product_url       = yofla_360_get_product_url($attributes['src'],$uploads_url);
     $product_path      = $wp_uploads['basedir'].$attributes['src'];
     $file_path_config  = $product_path.'config.js';
+    $file_path_images  = $product_path.'images';
     $file_path_config_xml  = $product_path.'config.xml';
     $rotatetool_js_url = $uploads_url.$attributes['src'].'rotatetool.js';
 
@@ -104,8 +103,8 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
     //check local paths, if set correctly
     if($output_legacy_version == false) {
         if($yofla_360_settings['is_absolute_url'] === false) {
-           if(!file_exists($file_path_config)) {
-               $html = yofla_360_format_error('Config file not readable, are paths set correctly? Path: '.$file_path_config);
+           if(!file_exists($file_path_images)) {
+               $html = yofla_360_format_error('Images folder not readable, are paths set correctly? Path: '.$file_path_config);
                return $html;
            }
         }
@@ -387,6 +386,7 @@ function yofla_360_get_iframe_code($attributes,$product_url,$product_path){
     //get database settings
     $yofla_360_settings = ($yofla_360_settings)?$yofla_360_settings:get_option( 'yofla_360_options' );
 
+
     $html = '';
 
     // get width, height
@@ -411,6 +411,13 @@ function yofla_360_get_iframe_code($attributes,$product_url,$product_path){
 
         $iframe_url = YOFLA_360_URL.'iframe.php?'.http_build_query($data);
     }
+
+
+    //output without 3DRT setup utility
+    if(yofla_360_is_just_images_directory($attributes)){
+        $iframe_url = yofla_360_get_iframe_url_for_just_images_directory($attributes,$yofla_360_settings);
+    }
+
 
     //output iframe
     $html .= '<iframe
@@ -590,3 +597,105 @@ function yofla_360_get_product_id($file_path_config){
     $product_id = $matches[1];
     return $product_id;
 }
+
+
+/**
+ * Checks if images directory is created by 3DRT Setup Utility or contains just images
+ *
+ * @param $attributes Array
+ * @return bool
+ */
+function yofla_360_is_just_images_directory($attributes) {
+
+   //if src is a absolute url path
+   if(yofla_360_starts_with_http($attributes['src'])) return false;
+
+   $wp_uploads = wp_upload_dir();
+   $product_path_full = $wp_uploads['basedir'].$attributes['src'];
+   $rotatetool_js_file_full_path = $product_path_full.'rotatetool.js';
+   $config_file_full_path = $product_path_full.'config.js';
+   if(file_exists($rotatetool_js_file_full_path) && file_exists($config_file_full_path) ){
+       return false;
+   }
+   else{
+       return true;
+   }
+}
+
+/**
+ * Automatically generate config.js & iframe.html based on images in products folder.
+ * Based on: http://www.yofla.com/3d-rotate/support/plugins/php-lib-for-360-product-view/
+ *
+ * @param $attributes
+ * @return string
+ */
+function yofla_360_get_iframe_url_for_just_images_directory($attributes,$yofla_360_settings) {
+
+    //include lib
+    include_once(YOFLA_360_PATH.'includes/yofla_3drt/lib/yofla/Rotate_Tool.php');
+
+    $wp_uploads = wp_upload_dir();
+    $uploads_url  = $wp_uploads["baseurl"];
+    $products_url = $uploads_url.'/'.YOFLA_360_PRODUCTS_DIRECTORY_NAME.'/';
+    $products_path = $wp_uploads['basedir'].'/'.YOFLA_360_PRODUCTS_DIRECTORY_NAME.'/';
+    $product_path_full = $wp_uploads['basedir'].$attributes['src'];
+    $product_path_relative = substr($attributes['src'],strpos($attributes['src'],YOFLA_360_PRODUCTS_DIRECTORY_NAME) + strlen(YOFLA_360_PRODUCTS_DIRECTORY_NAME) + 1); //get relative path by removing the yofla360 products directory name
+
+    //check paths
+    if(!file_exists($product_path_full)) return FALSE;
+
+    //plugin sotred settings
+    $rotatetool_js_src = YOFLA_PLAYER_URL;
+    if($yofla_360_settings && isset($yofla_360_settings['license_id'])){
+        $rotatetool_js_src = YOFLA_PLAYER_URL.'?id='.$yofla_360_settings['license_id'];;
+    }
+
+    //set vars
+    Rotate_Tool::$products_path = $products_path;
+    Rotate_Tool::$products_url = $products_url;
+    Rotate_Tool::$rotatetool_js_src = $rotatetool_js_src;
+
+    //generate config.js, always, let wordpress cache plugin do the "hard job"
+    $config_content = Rotate_Tool::get_config_file_content($product_path_full,Rotate_Tool::get_cascading_settings_for_directory($product_path_full));
+
+    if($config_content === FALSE) return FALSE;
+
+    //generate iframe.html, always, let wordpress cache plugin do the "hard job"
+    Rotate_Tool::get_page_for_iframe($product_path_relative);
+
+    //iframe page url
+    $iframe_url = Rotate_Tool::get_cached_iframe_page_url($product_path_relative);
+
+    return $iframe_url;
+}
+
+function yofla_360_activation_hook() {
+     yofla_360_check_products_folder_initialized();
+}
+
+/**
+ * Checks if settings ini in uplaods/yofla360 folder exists
+ */
+function yofla_360_check_products_folder_initialized()
+{
+    $wp_uploads = wp_upload_dir();
+    $products_path = $wp_uploads['basedir'].'/'.YOFLA_360_PRODUCTS_DIRECTORY_NAME.'/';
+    $settings_path = $products_path.'settings.ini';
+    $settings_source = YOFLA_360_PATH.'/includes/yofla_3drt/settings.ini';
+    if(!file_exists($settings_path)){
+        //create directory
+        wp_mkdir_p($products_path);
+
+        //copy settings file
+        copy($settings_source,$settings_path);
+    }
+}
+
+
+
+//HOOKS
+//define shortcode and callback
+add_shortcode('360', 'yofla_360_embed_shortcode');
+
+//activate hook
+register_activation_hook( __FILE__, 'yofla_360_activation_hook' );

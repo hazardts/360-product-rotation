@@ -25,6 +25,7 @@ An example is worth 1000s words: [View Online Demo](http://www.yofla.com/3d-rota
 
 ####How it works####
 You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to generate your 360° product view. Then upload the files usign FTP to your site and use a shortcode to insert the 360° product view to your site.
+New: now you can just upload the product images (using FTP) to create the rotation http://www.yofla.com/3d-rotate/support/plugins/wordpress-plugin-360-product-rotation/using-wordpress-plugin-without-3drt-setup-utility/
 
 
 == Installation ==
@@ -42,6 +43,9 @@ You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to genera
 List of all available options here: [360&deg; WP Plugin Manual](http://www.yofla.com/3d-rotate/support/plugins/wordpress-plugin-360-product-rotation/)
 
 == Changelog ==
+#####1.0.8#####
+* Added support for creating product rotations just from images (no need to use 3DRT Setup Utility)
+
 #####1.0.7#####
 * Added support for specifying Absolute URLs as src parameter, e.g. for amazon s3 files hosting
 
