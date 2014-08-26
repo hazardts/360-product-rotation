@@ -6,7 +6,7 @@ Requires at least: 3.3.0
 Tested up to: 3.9.1.
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Stable tag: 1.0.8
+Stable tag: trunk
 
 Insert 360 degree product views created with the free 3DRT Setup Utility Desktop application into your WordPress site.
 
@@ -43,8 +43,11 @@ New: now you can just upload the product images (using FTP) to create the rotati
 List of all available options here: [360&deg; WP Plugin Manual](http://www.yofla.com/3d-rotate/support/plugins/wordpress-plugin-360-product-rotation/)
 
 == Changelog ==
+#####1.0.9#####
+* Small code improvement for better updating from older versions of the plugin (creates yofla360 folder in uploads dir)
+
 #####1.0.8#####
-* Added support for creating product rotations just from images (no need to use 3DRT Setup Utility)
+* Added support for creating 360 product views from images only (no need to use 3DRT Setup Utility)
 
 #####1.0.7#####
 * Added support for specifying Absolute URLs as src parameter, e.g. for amazon s3 files hosting

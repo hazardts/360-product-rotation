@@ -8,7 +8,7 @@ Plugin Name: 360&deg; Product Rotation
 Plugin URI: http://www.yofla.com/3d-rotate/wordpress-plugin-360-product-rotation/
 Description: Plugin for easier integration of the 360 product rotation created by the 3D Rotate Tool Setup Utility.
 Author: YoFLA.com
-Version: 1.0.8
+Version: 1.0.9
 Last Modified: 07/2014
 Author URI: http://www.yofla.com/
 License: GPLv2
@@ -20,7 +20,7 @@ License: GPLv2
 if (!defined('YOFLA_PLAYER_URL')) define('YOFLA_PLAYER_URL', 'http://www.yofla.com/3d-rotate/app/cdn/get/rotatetool.js');
 if (!defined('YOFLA_LICENSE_ID_CHECK_URL')) define('YOFLA_LICENSE_ID_CHECK_URL', 'http://www.yofla.com/3d-rotate/app/check/licenseid/');
 if (!defined('YOFLA_360_VERSION_KEY')) define('YOFLA_360_VERSION_KEY', 'yofla_360_version');
-if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.7');
+if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.9');
 if (!defined('YOFLA_360_PATH'))  define('YOFLA_360_PATH', plugin_dir_path(__FILE__));
 if (!defined('YOFLA_360_URL'))  define('YOFLA_360_URL', plugin_dir_url(__FILE__));
 if (!defined('YOFLA_360_PRODUCTS_DIRECTORY_NAME'))  define('YOFLA_360_PRODUCTS_DIRECTORY_NAME', 'yofla360');
@@ -31,6 +31,8 @@ add_option(YOFLA_360_VERSION_KEY, YOFLA_360_VERSION_NUM);
 //check if upgrading...
 if (get_option(YOFLA_360_VERSION_KEY) != YOFLA_360_VERSION_NUM) {
     // Execute your upgrade logic here
+    if(get_option(YOFLA_360_VERSION_KEY) < '1.0.9')
+        yofla_360_check_products_folder_initialized();
     // Then update the version value
     update_option(YOFLA_360_VERSION_KEY, YOFLA_360_VERSION_NUM);
 }
@@ -104,7 +106,7 @@ function yofla_360_embed_shortcode($attributes, $content = null) {
     if($output_legacy_version == false) {
         if($yofla_360_settings['is_absolute_url'] === false) {
            if(!file_exists($file_path_images)) {
-               $html = yofla_360_format_error('Images folder not readable, are paths set correctly? Path: '.$file_path_config);
+               $html = yofla_360_format_error('Images folder not readable, are paths set correctly? Path: '.$file_path_images);
                return $html;
            }
         }
@@ -674,7 +676,7 @@ function yofla_360_activation_hook() {
 }
 
 /**
- * Checks if settings ini in uplaods/yofla360 folder exists
+ * Checks if settings ini in uplaods/yofla360 folder exists, creates if not
  */
 function yofla_360_check_products_folder_initialized()
 {
