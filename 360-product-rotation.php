@@ -8,8 +8,8 @@ Plugin Name: 360&deg; Product Rotation
 Plugin URI: http://www.yofla.com/3d-rotate/wordpress-plugin-360-product-rotation/
 Description: Plugin for easier integration of the 360 product rotation created by the 3D Rotate Tool Setup Utility.
 Author: YoFLA.com
-Version: 1.0.9
-Last Modified: 07/2014
+Version: 1.1.1
+Last Modified: 10/2014
 Author URI: http://www.yofla.com/
 License: GPLv2
 */
@@ -17,10 +17,10 @@ License: GPLv2
 
 
 //define constants
-if (!defined('YOFLA_PLAYER_URL')) define('YOFLA_PLAYER_URL', 'http://www.yofla.com/3d-rotate/app/cdn/get/rotatetool.js');
+if (!defined('YOFLA_PLAYER_URL')) define('YOFLA_PLAYER_URL', 'https://www.yofla.com/3d-rotate/app/cdn/get/rotatetool.js');
 if (!defined('YOFLA_LICENSE_ID_CHECK_URL')) define('YOFLA_LICENSE_ID_CHECK_URL', 'http://www.yofla.com/3d-rotate/app/check/licenseid/');
 if (!defined('YOFLA_360_VERSION_KEY')) define('YOFLA_360_VERSION_KEY', 'yofla_360_version');
-if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.0.9');
+if (!defined('YOFLA_360_VERSION_NUM')) define('YOFLA_360_VERSION_NUM', '1.1.1');
 if (!defined('YOFLA_360_PATH'))  define('YOFLA_360_PATH', plugin_dir_path(__FILE__));
 if (!defined('YOFLA_360_URL'))  define('YOFLA_360_URL', plugin_dir_url(__FILE__));
 if (!defined('YOFLA_360_PRODUCTS_DIRECTORY_NAME'))  define('YOFLA_360_PRODUCTS_DIRECTORY_NAME', 'yofla360');
@@ -53,7 +53,7 @@ $yofla_360_settings = array();
 /**
  * Function that processes the shortcode and outputs html code based on
  * shortcode parameters. See yofla_360_process_attributes for default
- * parameeeeters
+ * parameters
  *
  * @param $attributes
  * @param null $content
@@ -388,7 +388,6 @@ function yofla_360_get_iframe_code($attributes,$product_url,$product_path){
     //get database settings
     $yofla_360_settings = ($yofla_360_settings)?$yofla_360_settings:get_option( 'yofla_360_options' );
 
-
     $html = '';
 
     // get width, height
@@ -399,8 +398,6 @@ function yofla_360_get_iframe_code($attributes,$product_url,$product_path){
 
     //construct iframe html page if license id is set
     if($yofla_360_settings && isset($yofla_360_settings['license_id'])){
-
-
         //pass data for iframe html creation
         $data = array(
           'license_id' =>  $yofla_360_settings['license_id'],
@@ -410,7 +407,6 @@ function yofla_360_get_iframe_code($attributes,$product_url,$product_path){
           'ga_category' => $attributes['ga_category'],
           'ga_tracking_id' => ($attributes['ga_enabled'] && $attributes['ga_tracking_id'])?$attributes['ga_tracking_id']:false
         );
-
         $iframe_url = YOFLA_360_URL.'iframe.php?'.http_build_query($data);
     }
 
@@ -419,7 +415,6 @@ function yofla_360_get_iframe_code($attributes,$product_url,$product_path){
     if(yofla_360_is_just_images_directory($attributes)){
         $iframe_url = yofla_360_get_iframe_url_for_just_images_directory($attributes,$yofla_360_settings);
     }
-
 
     //output iframe
     $html .= '<iframe
@@ -629,11 +624,12 @@ function yofla_360_is_just_images_directory($attributes) {
  * Based on: http://www.yofla.com/3d-rotate/support/plugins/php-lib-for-360-product-view/
  *
  * @param $attributes
- * @return string
+ * @param $yofla_360_settings
+ * @return bool|string
  */
 function yofla_360_get_iframe_url_for_just_images_directory($attributes,$yofla_360_settings) {
 
-    //include lib
+    //include library
     include_once(YOFLA_360_PATH.'includes/yofla_3drt/lib/yofla/Rotate_Tool.php');
 
     $wp_uploads = wp_upload_dir();
@@ -646,24 +642,27 @@ function yofla_360_get_iframe_url_for_just_images_directory($attributes,$yofla_3
     //check paths
     if(!file_exists($product_path_full)) return FALSE;
 
-    //plugin sotred settings
+    //plugin stored settings, set "cloud" rotatetool.js, if set
     $rotatetool_js_src = YOFLA_PLAYER_URL;
-    if($yofla_360_settings && isset($yofla_360_settings['license_id'])){
+    if($yofla_360_settings && isset($yofla_360_settings['license_id']) && strlen($yofla_360_settings['license_id']) > 5){
         $rotatetool_js_src = YOFLA_PLAYER_URL.'?id='.$yofla_360_settings['license_id'];;
+        Rotate_Tool::$rotatetool_js_src = $rotatetool_js_src;
     }
 
     //set vars
+    $system_url = plugins_url()."/360-product-rotation/includes/yofla_3drt/";
+    Rotate_Tool::set_system_url($system_url);
     Rotate_Tool::$products_path = $products_path;
     Rotate_Tool::$products_url = $products_url;
-    Rotate_Tool::$rotatetool_js_src = $rotatetool_js_src;
 
     //generate config.js, always, let wordpress cache plugin do the "hard job"
-    $config_content = Rotate_Tool::get_config_file_content($product_path_full,Rotate_Tool::get_cascading_settings_for_directory($product_path_full));
+    $settings = Rotate_Tool::get_cascading_settings_for_directory($product_path_full);
+    $config_content = Rotate_Tool::get_config_file_content($product_path_full,$settings);
 
     if($config_content === FALSE) return FALSE;
 
     //generate iframe.html, always, let wordpress cache plugin do the "hard job"
-    Rotate_Tool::get_page_for_iframe($product_path_relative);
+    Rotate_Tool::get_page_for_iframe($product_path_relative,$settings);
 
     //iframe page url
     $iframe_url = Rotate_Tool::get_cached_iframe_page_url($product_path_relative);

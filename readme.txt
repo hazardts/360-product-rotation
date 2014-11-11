@@ -3,10 +3,10 @@ Contributors: YoFLA
 Tags: 360, 360 product view, 360 product rotation, 360 product viewer, 3d product viewer, 360 view software,
 product rotation, objectvr, object vr, 3D product rotation, 3D, product spin, 360 product spin
 Requires at least: 3.3.0
-Tested up to: 3.9.1.
+Tested up to: 4.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
-Stable tag: 1.0.9
+Stable tag: 1.1.1
 
 Insert 360 degree product views created with the free 3DRT Setup Utility Desktop application into your WordPress site.
 
@@ -24,8 +24,8 @@ An example is worth 1000s words: [View Online Demo](http://www.yofla.com/3d-rota
 
 
 ####How it works####
-You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to generate your 360° product view. Then upload the files usign FTP to your site and use a shortcode to insert the 360° product view to your site.
-New: now you can just upload the product images (using FTP) to create the rotation http://www.yofla.com/3d-rotate/support/plugins/wordpress-plugin-360-product-rotation/using-wordpress-plugin-without-3drt-setup-utility/
+New: Now you can just upload the product images (using FTP) to create the rotation: http://www.yofla.com/3d-rotate/support/plugins/wordpress-plugin-360-product-rotation/using-wordpress-plugin-without-3drt-setup-utility/
+You use the free [3DRT Setup Utility](http://www.yofla.com/3d-rotate/) to generate your 360° product view. Then upload the files using FTP to your site and use a shortcode to insert the 360° product view to your site.
 
 
 == Installation ==
@@ -42,7 +42,15 @@ New: now you can just upload the product images (using FTP) to create the rotati
 
 List of all available options here: [360&deg; WP Plugin Manual](http://www.yofla.com/3d-rotate/support/plugins/wordpress-plugin-360-product-rotation/)
 
+== Screenshots ==
+1. This is how the player looks like. You can customize skin if you like.
+
+
 == Changelog ==
+#####1.1.1#####
+* Updated to support SSL on websites
+* Improved "just images" functionality for better support of local settings.ini
+
 #####1.0.9#####
 * Small code improvement for better updating from older versions of the plugin (creates yofla360 folder in uploads dir)
 

@@ -9,7 +9,7 @@
  * Support: http://www.yofla.com/3d-rotate/contact
  *
  * @author Matus Laco, www.yofla.com, matus@yofla.com
- * @version 0.1.3
+ * @version 0.1.4
  * @since May 2014
  * @copyright Matus Lac, www.yofla.com
  * @license GPLv2
@@ -34,7 +34,7 @@ include_once "Rotate_Utils.php";
 
 class Rotate_Tool
 {
-    const SCRIPT_VERSION = '0.1.3';
+    const SCRIPT_VERSION = '0.1.4';
     const SYSTEM_DIRECTORY_NAME = 'yofla_3drt'; //the directory where the templates,lib,player_files subdirs are
     const PRODUCTS_DIRECTORY_NAME = 'products';
     const IMAGES_DIRECTORY = 'images';
@@ -61,11 +61,16 @@ class Rotate_Tool
     private static $_products_csv_path = null; //full system path to products csv
 
 
+    public static function disable_cache()
+    {
+        self::$is_cache_disabled = true;
+    }
+
 
     /**
      * Initializes the Class with defaults
      */
-    private function _initialize()
+    private static function _initialize()
     {
         //set the full system path to the system directory
         self::_check_system_path();
@@ -73,15 +78,15 @@ class Rotate_Tool
         //set web root
         self::set_system_url();
 
-        //set paths to products directory
-        self::_check_products_path();
-        
-        //check cache folders
-        self::_check_cache_directories();
-        
         //load settings
         self::_load_settings();
 
+        //set paths to products directory
+        self::_check_products_path();
+
+        //check cache folders
+        self::_check_cache_directories();
+        
         //set vars
         self::$_products_csv_path = self::$system_path."cache/products.dat";
         
@@ -93,7 +98,7 @@ class Rotate_Tool
     /**
      * Checks if sytem_directory is set, if not, uses the calee script path
      */
-    private function _check_system_path()
+    private static function _check_system_path()
     {
         //set system path if it is not already set
         if (self::$system_path === NULL)
@@ -108,16 +113,16 @@ class Rotate_Tool
     /**
      * Checks if full system path to products directory is set
      */
-    private function _check_products_path()
+    private static function _check_products_path()
     {
-        if(self::$system_path === NULL) return;
+        if(self::$system_path === NULL) return FALSE;
 
-        if (self::$products_path === NULL)
+        if (!self::$products_path)
         {
             self::$products_path = self::$system_path.self::PRODUCTS_DIRECTORY_NAME."/";
         }
 
-        if (self::$products_url === NULL)
+        if (!self::$products_url)
         {
             self::$products_url = self::$system_url.self::PRODUCTS_DIRECTORY_NAME."/";
         }
@@ -126,7 +131,7 @@ class Rotate_Tool
     /**
      * if cache folder is deleted, try to recreate it
      */
-    private function _check_cache_directories()
+    private static function _check_cache_directories()
     {
        $cache_dir_paths = array();
        $cache_dir_paths[] = self::$system_path.'cache';
@@ -145,13 +150,13 @@ class Rotate_Tool
     /**
      * Loads the script settings from the settings.ini file
      */
-    private function _load_settings()
+    private static function _load_settings()
     {
 
         //settings.ini in products folder takes precedense
         $ini_file = self::$products_path.'settings.ini';
         if(!file_exists($ini_file))  $ini_file = self::$system_path.'settings.ini';
-        
+
         self::$settings = parse_ini_file($ini_file,true);
 
         //inject class variable setting, if set
@@ -159,12 +164,24 @@ class Rotate_Tool
         {
             self::$settings['system']['rotatetoolUrl'] = self::$rotatetool_js_src;
         }
+
+        //set products path, if set
+        if(isset(self::$settings['system']['productsPath']))
+        {
+            self::set_products_path(self::$settings['system']['productsPath']);
+        }
+
+        //set products url, if set
+        if(isset(self::$settings['system']['productsUrl']))
+        {
+            self::set_products_url(self::$settings['system']['productsUrl']);
+        }
     }
 
     /**
      * Check whether the class initialization has run
      */
-    private function _check_initialized()
+    private static function _check_initialized()
     {
         if (self::$_is_initialized === false)
         {
@@ -179,8 +196,11 @@ class Rotate_Tool
      *
      * @param null $url
      */
-    public function set_system_url($url = null)
+    public static function set_system_url($url = null)
     {
+        //do not override system_url if set before
+        if($url == null && isset(self::$system_url)) $url = self::$system_url;
+
         if (is_null($url))
         {
             //assume no url rewrite is in place and the url is the same as the physical location of the files
@@ -200,12 +220,34 @@ class Rotate_Tool
     }
 
     /**
+     * Sets the url path to the "products directory"
+     *
+     * @param null $url
+     */
+    public static function set_products_url($url = null)
+    {
+        if (is_null($url))
+        {
+            //no action
+        }
+        else
+        {
+            //set value
+            self::$products_url = Rotate_Tool::_add_trailing_slash($url);
+        }
+    }
+
+    /**
      * Sets the full system path to the main yofla_3drt directory
      *
      * @param $path
      */
-    public function set_system_path($path)
+    public static function set_system_path($path = null)
     {
+
+        //do not overwrite system_path if set before
+        if($path == null && isset(self::$system_path)) $path = self::$system_path;
+
         if(is_dir($path))
         {
             if (function_exists('realpath') AND @realpath($path) !== FALSE)
@@ -223,6 +265,34 @@ class Rotate_Tool
         }
     }
 
+    /**
+     * Sets the full system path to the products directory
+     *
+     * @param $path
+     */
+    public static function set_products_path($path = null)
+    {
+
+        //do not overwrite products_path if set before
+        if($path == null && isset(self::$products_path)) $path = self::$products_path;
+
+        if(is_dir($path))
+        {
+            if (function_exists('realpath') AND @realpath($path) !== FALSE)
+            {
+                self::$products_path = Rotate_Tool::_add_trailing_slash(realpath($path));
+            }
+            else
+            {
+                self::$products_path = Rotate_Tool::_add_trailing_slash(path);
+            }
+        }
+        else
+        {
+            self::$errors[] = 'Provided path "'.$path.'" for yofla_3drt path directory is not valid!'."\n";
+        }
+    }
+
 
     /**
      * Returns an array with products, structure for each array entry:
@@ -231,7 +301,7 @@ class Rotate_Tool
      * iframe_url
      * config_url
      */
-    public function get_products_list()
+    public static function get_products_list()
     {
        //check if paths are set
        if (self::_check_initialized() === FALSE) return FALSE;
@@ -261,7 +331,7 @@ class Rotate_Tool
      *
      * @return array|bool
      */
-    public function scan()
+    public static function scan()
     {
         //check if paths are set
         if (self::_check_initialized() === FALSE) return FALSE;
@@ -283,9 +353,8 @@ class Rotate_Tool
      * @param $path
      * @param $settings
      */
-    private function _scan_directory($path,$settings = NULL)
+    private static function _scan_directory($path,$settings = NULL)
     {
-
         //fix path
         $path = self::_add_trailing_slash($path);
 
@@ -329,7 +398,7 @@ class Rotate_Tool
      * @param string $path The full system path
      * @param $settings The parent settings
      */
-    private function _add_directory_to_products_list($path,$settings = null)
+    private static function _add_directory_to_products_list($path,$settings = null)
     {
 
         if(self::_has_directory_product_images($path))
@@ -374,10 +443,14 @@ class Rotate_Tool
      * @param array $options The options as associative array to create the iframe and rotation with.
      * @return string The iframe code with working rotation
      */
-    public function get_iframe($path,$options=null)
+    public static function get_iframe($path,$options=null)
     {
         //check if paths are set
         if (self::_check_initialized() === FALSE) return '';
+
+
+        $full_path = self::$products_path.$path;
+        if (!file_exists($full_path)) return 'Error: Path "'.$path.'" does not exist!';
 
         $iframe_url = self::get_iframe_url($path);
 
@@ -417,7 +490,7 @@ class Rotate_Tool
      * @param string $path The relative path to product's directory
      * @return string The iframe url
      */
-    public function get_iframe_url($path)
+    public static function get_iframe_url($path)
     {
         //check if paths are set
         if (self::_check_initialized() === FALSE) return '';
@@ -437,20 +510,22 @@ class Rotate_Tool
             }
             else
             {
-                return $dynamic_url;
+                //generate cahced iframe page and return
+                self::get_page_for_iframe($path);
+                return self::get_cached_iframe_page_url($path);
             }
         }
     }
 
 
-    private function _get_cached_iframe_page_system_path($path)
+    private static function _get_cached_iframe_page_system_path($path)
     {
         $filename = self::_get_cached_iframe_page_filename($path);
         $path = self::$system_path."cache/pages/".$filename;
         return $path;
     }
 
-    private function _get_cached_iframe_page_filename($path)
+    private static function _get_cached_iframe_page_filename($path)
     {
         $filename = str_replace("/","_",$path)."_iframe.html";
         return $filename;
@@ -462,32 +537,34 @@ class Rotate_Tool
      * @param $path string The relative path to the products directory
      * @return string
      */
-    public function get_cached_iframe_page_url($path)
+    public static function get_cached_iframe_page_url($path)
     {
         $filename = self::_get_cached_iframe_page_filename($path);
         $url = self::$system_url."cache/pages/".$filename;
         return $url;
     }
 
-
-
     /**
      * Returns the html content of the page, that is hosted within the
      * iframe embed code. Stores it in cache also.
      *
      * @param string $path The relative path to main products folder
+     * @param array $settings
      * @return string
      */
-    public function get_page_for_iframe($path)
+    public function get_page_for_iframe($path,$settings=NULL)
     {
         //check if paths are set
         if (self::_check_initialized() === FALSE) return '';
 
+        //set settings
+        $settings = ($settings === NULL) ? self::$settings : $settings;
+
 
         //get rotatetool.js location
-        if(self::$settings["system"]["rotatetoolUrl"])
+        if($settings["system"]["rotatetoolUrl"])
         {
-           $rotatetool_url =  self::$settings["system"]["rotatetoolUrl"];
+            $rotatetool_url =  $settings["system"]["rotatetoolUrl"];
         }
         else
         {
@@ -496,9 +573,9 @@ class Rotate_Tool
         }
 
         //get theme url
-        if(isset(self::$settings["system"]["theme"]))
+        if(isset($settings["system"]["theme"]))
         {
-            $theme_url = self::$system_url.'themes/'.self::$settings["system"]["theme"];
+            $theme_url = self::$system_url.'themes/'.$settings["system"]["theme"];
         }
         else
         {
@@ -527,7 +604,7 @@ class Rotate_Tool
     }
 
 
-    public function serve_page_for_iframe()
+    public static function serve_page_for_iframe()
     {
         //check if paths are set
         if (self::_check_initialized() === FALSE) return '';
@@ -554,9 +631,11 @@ class Rotate_Tool
      *
      * @param string $path The relative path relative to products directory
      * @return string
+     * @throws Exception
      */
-    public function get_config_url_for_product($path)
+    public static function get_config_url_for_product($path)
     {
+
         //check if paths are set
         if (self::_check_initialized() === FALSE) return '';
 
@@ -564,6 +643,7 @@ class Rotate_Tool
         $data = array("p"=>$path);
         $query = http_build_query($data);
         $url = self::$system_url.'lib/yofla/get_config_file.php?'.$query;
+
 
         if(self::$is_cache_disabled === TRUE)
         {
@@ -574,6 +654,7 @@ class Rotate_Tool
             //check cache
             $cached_config_path_full = self::_get_cached_config_path_full($path);
 
+
             if(file_exists($cached_config_path_full))
             {
                 //url for cached version of previously generated config.js
@@ -582,10 +663,23 @@ class Rotate_Tool
             else
             {
                 //force creating cached config js
-                $full_path = self::$system_path.self::PRODUCTS_DIRECTORY_NAME."/".$path;
+                $full_path = Rotate_Tool::_add_trailing_slash(self::$products_path.$path);
+
+                //get settings
+                $settings = self::get_cascading_settings_for_directory($full_path);
+
 
                 //create (and cache) config file content
-                self::get_config_file_content($full_path,self::get_cascading_settings_for_directory($full_path));
+                $config_content = self::get_config_file_content($full_path,$settings);
+
+
+                if(!$config_content || strlen($config_content) < 10)
+                {
+                    $error = "Errors: ";
+                    $error .= implode('|',self::$errors);
+                    throw new Exception($error);
+                }
+
 
                 //return cached url
                 return self::get_cached_config_url($path);
@@ -599,7 +693,7 @@ class Rotate_Tool
      * @param $path string The relative path to the products directory
      * @return string
      */
-    public function get_cached_config_url($path)
+    public static function get_cached_config_url($path)
     {
         $url = self::$system_url.'cache/configs/'.self::_get_cached_config_filename($path);
         return $url;
@@ -611,7 +705,7 @@ class Rotate_Tool
      * Called externally from get_config_file.php
      *
      */
-    public function generate_config_file()
+    public static function generate_config_file()
     {
         //check if paths are set
         if (self::_check_initialized() === FALSE)
@@ -656,13 +750,19 @@ class Rotate_Tool
      * @param null $settings The parent settings to inherit from
      * @return bool|string
      */
-    public function get_config_file_content($path,$settings = NULL)
+    public static function get_config_file_content($path,$settings = NULL)
     {
+
         //check if paths are set
-        if (self::_check_initialized() === FALSE) return FALSE;
+        if (self::_check_initialized() === FALSE) {
+            self::$errors[] = "get_config_file_content() : error in _check_initialized(): $path";
+            return FALSE;
+        }
+
 
         //get list of images
         $images_list = self::get_images_list($path);
+
 
         //error when fetching images list
         if($images_list === FALSE)
@@ -703,7 +803,7 @@ class Rotate_Tool
      * @param $path string The relative path of the product, relative to the products directory
      * @return string
      */
-    private function _get_cached_config_path_full($path)
+    private static function _get_cached_config_path_full($path)
     {
         $filename = self::_get_cached_config_filename($path);
         $full_path = self::$system_path.'cache/configs/'.$filename;
@@ -717,8 +817,9 @@ class Rotate_Tool
      * @param $path string The relative path for the product, relative to the products directory
      * @return string
      */
-    private function _get_cached_config_filename($path)
+    private static function _get_cached_config_filename($path)
     {
+        $path = Rotate_Tool::_add_trailing_slash($path);
         $filename = str_replace('/','_',$path).'_config.js';
         return $filename;
     }
@@ -737,7 +838,7 @@ class Rotate_Tool
      * @param $path Is the absolute system path to the products directory
      * @return array
      */
-    public function get_images_list($path)
+    public static function get_images_list($path)
     {
 
         //init return value
@@ -779,7 +880,7 @@ class Rotate_Tool
      * @param $path
      * @return array|bool
      */
-    public function get_images_in_directory($path)
+    public static function get_images_in_directory($path)
     {
         //validate parameter
         if (!is_dir($path)) return NULL;
@@ -813,7 +914,7 @@ class Rotate_Tool
      * @param $path
      * @return bool
      */
-    public function is_file_supported_image($path)
+    public static function is_file_supported_image($path)
     {
        $supported_extensions = array('jpg','jpeg','gif','png','bmp');
        if(is_file($path)){
@@ -833,7 +934,7 @@ class Rotate_Tool
      * @param $values
      * @return string
      */
-    private function _get_template_output($template_filename,$values)
+    private static function _get_template_output($template_filename,$values)
     {
 
         //construct path
@@ -863,7 +964,7 @@ class Rotate_Tool
      * @param $path
      * @return string
      */
-    private function _add_trailing_slash($path)
+    private static function _add_trailing_slash($path)
     {
         //add trailing slash to path if missing
         if(substr($path, -1) != "/") $path .= "/";
@@ -876,7 +977,7 @@ class Rotate_Tool
      *
      * @return bool
      */
-    private function _check_path_parameter()
+    private static function _check_path_parameter()
     {
        if(isset($_GET["p"]))
        {
@@ -894,7 +995,7 @@ class Rotate_Tool
      * @param $path
      * @return bool
      */
-    private function _has_directory_product_images($path)
+    private static function _has_directory_product_images($path)
     {
        $images_list = self::get_images_list($path);
         
@@ -914,7 +1015,7 @@ class Rotate_Tool
      * @param $path
      * @return array|bool
      */
-    private function _get_directory_settings($path)
+    private static function _get_directory_settings($path)
     {
        $path_fixed = self::_add_trailing_slash($path);
        $path_settings = $path_fixed.'settings.ini';
@@ -935,7 +1036,7 @@ class Rotate_Tool
      * @param $path
      * @return string
      */
-    private function _get_relative_path_from_full_path($path)
+    private static function _get_relative_path_from_full_path($path)
     {
        return substr($path,strlen(self::$products_path));
     }
@@ -948,7 +1049,7 @@ class Rotate_Tool
      * @param string $path The full system path
      * @return array
      */
-    public function  get_cascading_settings_for_directory($path)
+    public static function  get_cascading_settings_for_directory($path)
     {
 
         //path relative to products directory
@@ -993,13 +1094,13 @@ class Rotate_Tool
      * @param $content
      * @param $content_type
      */
-    private function _serve_file($content,$content_type = NULL)
+    private static function _serve_file($content,$content_type = NULL)
     {
         if ($content_type) header('Content-Type: '.$content_type);
         die($content);
     }
 
-    private function _serve_error($message)
+    private static function _serve_error($message)
     {
         die($message);
     }
